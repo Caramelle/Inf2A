@@ -21,7 +21,7 @@ class MH_Lexer extends GenLexer implements LEX_TOKEN_STREAM
 			switch (state) 
 			{ 
 				case 0: if (CharTypes.isSmall(c)) return 1; else return 2; //small letter
-				case 1: if (CharTypes.isLarge(c) || CharTypes.isDigit(c) || (int) c == 39) return 1; else return 2; //capital letter 
+				case 1: if (CharTypes.isSmall(c) || CharTypes.isLarge(c) || CharTypes.isDigit(c) || (c == '\'')) return 1; else return 2; //capital letter 
 				default: return 2;
 			}
 		}
@@ -99,8 +99,8 @@ class MH_Lexer extends GenLexer implements LEX_TOKEN_STREAM
 		{
 			switch (state) 
 			{
-				case 0: if (c == ' ') return 1; else return 2; 
-				case 1: if (c == ' ') return 1; else return 2; 
+				case 0: if (CharTypes.isWhitespace(c)) return 1; else return 2; 
+				case 1: if (CharTypes.isWhitespace(c)) return 1; else return 2; 
 				default: return 2;
 			}
 		}
@@ -125,8 +125,8 @@ class MH_Lexer extends GenLexer implements LEX_TOKEN_STREAM
 				default: return 5 ;
 			}
 		}
-		boolean accepting (int state) {return (state == 1) ;}
-		boolean dead (int state) {return (state == 2) ;}
+		boolean accepting (int state) {return (state == 4) ;}
+		boolean dead (int state) {return (state == 5) ;}
 	}
 	
 
@@ -136,29 +136,22 @@ class MH_Lexer extends GenLexer implements LEX_TOKEN_STREAM
 		int tokLen ;
 		TokAcceptor (String tok) {this.tok = tok ; tokLen = tok.length() ;}
 		public String lexClass() {return tok;};
-		public int numberOfStates() {return 9;};
+		public int numberOfStates() {return tokLen+2;};
 		
 		int nextState (int state, char c)
 		{
-			switch (state)
+			while(state < tokLen)
 			{
-				case 0: if (tokLen == 1) return 1; 
-					else if (tokLen == 2) return 2;
-						else if (tokLen == 4) return 3;
-							else if (tokLen == 7) return 6;
-								else return 8;
-				case 1: if (tok.charAt(state-1) == '(' || tok.charAt(state-1) == ')' || tok.charAt(state-1) == ';') return 7; else return 8;
-				case 2: if (tok.charAt(state-2)== 'i' && tok.charAt(state-1) == 'f') return 7; else return 8;
-				case 3: if (tok.charAt(state-3) == 'e' && tok.charAt(state-2) == 'l' && tok.charAt(state-1) == 's' && tok.charAt(state) == 'e') return 7; else return 4;
-				case 4: if (tok.charAt(state-3) == 't' && tok.charAt(state-2) == 'h' && tok.charAt(state-1) == 'e' && tok.charAt(state) == 'n') return 7; else return 5;
-				case 5: if (tok.charAt(state-3) == 'B' && tok.charAt(state-2) == 'o' && tok.charAt(state-1) == 'o' && tok.charAt(state) == 'l') return 7; else return 8;
-				case 6: if (tok.charAt(state-6) == 'I' && tok.charAt(state-5) == 'n' && tok.charAt(state-4) == 't' && tok.charAt(state-3) == 'e' && tok.charAt(state-2) == 'g' && tok.charAt(state-1) == 'e' && tok.charAt(state) == 'r') return 7; else return 8;		
-				default: return 8;
+				if(tok.charAt(state)==c)
+					return state+1;
+				else
+					return tokLen+1;
 			}
+			return tokLen+1;
 		}
 			
-		boolean accepting (int state) {return (state == 7) ;}
-		boolean dead (int state) {return (state == 8) ;}
+		boolean accepting (int state) {return (state == tokLen) ;}
+		boolean dead (int state) {return (state == tokLen+1) ;}
 		
 	}
 	
@@ -177,18 +170,16 @@ class MH_Lexer extends GenLexer implements LEX_TOKEN_STREAM
 	    static DFA ElseAcceptor = new TokAcceptor ("else");
 	    static DFA ThenAcceptor = new TokAcceptor ("then");
 	    static DFA IntegerAcceptor = new TokAcceptor ("Integer"); 
-	    static DFA[] MH_acceptors = new DFA[] {LParanthesisAcceptor, RParanthesisAcceptor, SemicolonAcceptor,IntegerAcceptor, BoolAcceptor, IfAcceptor, ElseAcceptor, ThenAcceptor, VarAcceptor, NumAcceptor, BooleanAcceptor, SymAcceptor, WhitespaceAcceptor, CommentAcceptor} ;
+	    static DFA[] MH_acceptors = new DFA[] {WhitespaceAcceptor, SymAcceptor, CommentAcceptor, NumAcceptor, LParanthesisAcceptor, RParanthesisAcceptor, IfAcceptor, ThenAcceptor, ElseAcceptor, VarAcceptor, BooleanAcceptor, BoolAcceptor, IntegerAcceptor, SemicolonAcceptor} ;
 	
 
 	    MH_Lexer (Reader reader) 
 	    {
-	    	super(reader,MH_acceptors) ;
+	    	super(reader, MH_acceptors) ;
 	    }
-}
+
 
     
-class MH_LexerDemo
-{
     public static void main (String[] args) 
     throws LexError, StateOutOfRange, IOException 
     {
@@ -196,10 +187,8 @@ class MH_LexerDemo
 	    Reader reader = new BufferedReader (new InputStreamReader (System.in)) ;
 	    GenLexer demoLexer = new MH_Lexer (reader) ;
 	    LexToken currTok = demoLexer.pullProperToken() ;
-	    System.out.println (currTok);
 	    while (currTok != null) 
 	    {
-	    	System.out.println ("fgtref");
 	        System.out.println (currTok.value() + " \t" + currTok.lexClass()) ;
 	        currTok = demoLexer.pullProperToken() ;
 	    } ;
